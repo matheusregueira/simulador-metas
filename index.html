@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Metas — Stone</title>
+  <style>
+    :root {
+      --green: #00A868;
+      --green-dark: #007A4C;
+      --green-light: #E6F7F0;
+      --yellow: #F5A623;
+      --red: #E74C3C;
+      --gray-bg: #F4F5F7;
+      --gray-line: #EBEBEB;
+      --gray-text: #6B7280;
+      --text: #111827;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--gray-bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--green);
+      padding: 20px 32px;
+      color: white;
+    }
+
+    header h1 { font-size: 1.3rem; font-weight: 700; }
+    header p  { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
+
+    .container {
+      max-width: 780px;
+      margin: 28px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--green-dark);
+      margin-bottom: 16px;
+    }
+
+    /* Trilha */
+    .trilha-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .trilha-btn {
+      flex: 1;
+      min-width: 130px;
+      padding: 14px 10px;
+      border: 2px solid var(--gray-line);
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .trilha-btn:hover { border-color: var(--green); }
+
+    .trilha-btn.active {
+      border-color: var(--green);
+      background: var(--green-light);
+    }
+
+    .trilha-btn .t-nome { font-weight: 700; font-size: 1rem; }
+    .trilha-btn .t-val  { font-size: 0.8rem; color: var(--gray-text); margin-top: 3px; }
+
+    /* KPI table */
+    .kpi-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .kpi-header span {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-text);
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 13px 0;
+      border-top: 1px solid var(--gray-line);
+    }
+
+    .kpi-name { font-weight: 600; font-size: 0.92rem; }
+    .kpi-sub  { font-size: 0.75rem; color: var(--gray-text); margin-top: 2px; font-weight: 400; }
+
+    .kpi-row input {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid var(--gray-line);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border 0.15s;
+    }
+
+    .kpi-row input:focus { border-color: var(--green); }
+
+    /* Resultados */
+    .res-row {
+      padding: 12px 0;
+      border-top: 1px solid var(--gray-line);
+    }
+
+    .res-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .res-name { font-size: 0.88rem; font-weight: 600; }
+    .res-name small { color: var(--gray-text); font-weight: 400; }
+
+    .res-pct { font-weight: 700; font-size: 0.98rem; color: var(--green-dark); }
+
+    .bar-track {
+      height: 7px;
+      background: var(--gray-line);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--green);
+      transition: width 0.35s ease;
+    }
+
+    .bar-fill.warn   { background: var(--yellow); }
+    .bar-fill.danger { background: var(--red); }
+
+    /* Score final */
+    .score-grid {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      padding: 4px 0 8px;
+    }
+
+    .score-block .s-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-text);
+      font-weight: 700;
+    }
+
+    .score-block .s-value {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: var(--green);
+      line-height: 1.15;
+    }
+
+    .score-block .s-sub {
+      font-size: 0.78rem;
+      color: var(--gray-text);
+      margin-top: 1px;
+    }
+
+    .divider { height: 1px; background: var(--gray-line); margin: 16px 0; }
+
+    /* Bonus badge */
+    .bonus {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 9px;
+      background: #FFFBEB;
+      border: 1.5px solid var(--yellow);
+      font-size: 0.88rem;
+    }
+
+    .bonus.ativo {
+      background: var(--green-light);
+      border-color: var(--green);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Simulador de Metas</h1>
+  <p>Franquia Stone — Barbacena/MG &nbsp;·&nbsp; projete seu atingimento e valor a receber</p>
+</header>
+
+<div class="container">
+
+  <!-- Trilha -->
+  <div class="card">
+    <div class="card-title">1. Sua trilha</div>
+    <div class="trilha-group">
+      <button class="trilha-btn active" data-valor="600" onclick="selecionaTrilha(this)">
+        <div class="t-nome">Aspira</div>
+        <div class="t-val">100% = R$ 600</div>
+      </button>
+      <button class="trilha-btn" data-valor="1200" onclick="selecionaTrilha(this)">
+        <div class="t-nome">Agente 1</div>
+        <div class="t-val">100% = R$ 1.200</div>
+      </button>
+      <button class="trilha-btn" data-valor="1700" onclick="selecionaTrilha(this)">
+        <div class="t-nome">Agente 2</div>
+        <div class="t-val">100% = R$ 1.700</div>
+      </button>
+      <button class="trilha-btn" data-valor="2000" onclick="selecionaTrilha(this)">
+        <div class="t-nome">Agente 3</div>
+        <div class="t-val">100% = R$ 2.000</div>
+      </button>
+      <button class="trilha-btn" data-valor="2400" onclick="selecionaTrilha(this)">
+        <div class="t-nome">Agente 4</div>
+        <div class="t-val">100% = R$ 2.400</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="card">
+    <div class="card-title">2. Metas e realizados</div>
+    <div class="kpi-header">
+      <span></span>
+      <span>Meta</span>
+      <span>Realizado</span>
+    </div>
+
+    <div class="kpi-row">
+      <div>
+        <div class="kpi-name">NA — Novos Ativos</div>
+        <div class="kpi-sub">Peso 30% · Sem teto</div>
+      </div>
+      <input type="number" id="na-meta" placeholder="0" min="0" oninput="calcular()">
+      <input type="number" id="na-real" placeholder="0" min="0" oninput="calcular()">
+    </div>
+
+    <div class="kpi-row">
+      <div>
+        <div class="kpi-name">Clientes 50k+</div>
+        <div class="kpi-sub">Bônus proporcional de 25%</div>
+      </div>
+      <div style="color:var(--gray-text);font-size:0.8rem;padding:9px 0">do NA realizado</div>
+      <input type="number" id="bonus-clientes" placeholder="0" min="0" oninput="calcular()">
+    </div>
+
+    <div class="kpi-row">
+      <div>
+        <div class="kpi-name">TPV M1</div>
+        <div class="kpi-sub">Peso 40% · Teto 150%</div>
+      </div>
+      <input type="number" id="tpv-meta" placeholder="0" min="0" oninput="calcular()">
+      <input type="number" id="tpv-real" placeholder="0" min="0" oninput="calcular()">
+    </div>
+
+    <div class="kpi-row">
+      <div>
+        <div class="kpi-name">Churn</div>
+        <div class="kpi-sub">Peso 30% · Sem teto</div>
+      </div>
+      <input type="number" id="churn-meta" placeholder="0" min="0" oninput="calcular()">
+      <input type="number" id="churn-real" placeholder="0" min="0" oninput="calcular()">
+    </div>
+  </div>
+
+  <!-- Resultado -->
+  <div class="card">
+    <div class="card-title">3. Resultado</div>
+
+    <div class="res-row">
+      <div class="res-top">
+        <span class="res-name">NA — Novos Ativos <small>(30%)</small></span>
+        <span class="res-pct" id="na-pct">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="na-bar" style="width:0"></div></div>
+    </div>
+
+    <div class="res-row">
+      <div class="res-top">
+        <span class="res-name">TPV M1 <small>(40%)</small></span>
+        <span class="res-pct" id="tpv-pct">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="tpv-bar" style="width:0"></div></div>
+    </div>
+
+    <div class="res-row">
+      <div class="res-top">
+        <span class="res-name">Churn <small>(30%)</small></span>
+        <span class="res-pct" id="churn-pct">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="churn-bar" style="width:0"></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="score-grid">
+      <div class="score-block">
+        <div class="s-label">Atingimento final</div>
+        <div class="s-value" id="score-pct">—</div>
+      </div>
+      <div class="score-block">
+        <div class="s-label">Valor a receber</div>
+        <div class="s-value" id="score-valor">—</div>
+        <div class="s-sub" id="score-sub"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="bonus" id="bonus">
+      <span>⚡</span>
+      <span id="bonus-txt">Informe quantos clientes do NA fizeram 50k+ para calcular o bônus</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let trilhaValor = 600;
+
+  function selecionaTrilha(btn) {
+    document.querySelectorAll('.trilha-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    trilhaValor = parseFloat(btn.dataset.valor);
+    calcular();
+  }
+
+  function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+  function calcular() {
+    const naMeta    = val('na-meta');
+    const naReal    = val('na-real');
+    const tpvMeta   = val('tpv-meta');
+    const tpvReal   = val('tpv-real');
+    const churnMeta = val('churn-meta');
+    const churnReal = val('churn-real');
+
+    const naAting    = naMeta    > 0 ? (naReal / naMeta) * 100 : 0;
+    const tpvAting   = tpvMeta   > 0 ? Math.min((tpvReal / tpvMeta) * 100, 150) : 0;
+    const churnAting = churnReal > 0 ? (churnMeta / churnReal) * 100 : 0;
+
+    const score = (naAting * 0.30) + (tpvAting * 0.40) + (churnAting * 0.30);
+
+    const clientesBonus  = val('bonus-clientes');
+    const bonusAting     = clientesBonus > 0 && naAting > 0 ? clientesBonus * naAting * 0.25 : 0;
+    const bonusContrib   = bonusAting * 0.30;
+    const scoreTotal     = score + bonusContrib;
+    const valorFinal     = trilhaValor * (scoreTotal / 100);
+
+    atualizaBar('na',    naAting);
+    atualizaBar('tpv',   tpvAting);
+    atualizaBar('churn', churnAting);
+
+    const temDados = naMeta > 0 || tpvMeta > 0 || churnMeta > 0;
+
+    document.getElementById('score-pct').textContent   = temDados ? scoreTotal.toFixed(1) + '%' : '—';
+    document.getElementById('score-valor').textContent = temDados
+      ? 'R$ ' + valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '—';
+    document.getElementById('score-sub').textContent = (bonusContrib > 0 && temDados)
+      ? 'base ' + score.toFixed(1) + '% + bônus ' + bonusContrib.toFixed(2) + '%'
+      : '';
+
+    const badge = document.getElementById('bonus');
+    const txt   = document.getElementById('bonus-txt');
+
+    if (clientesBonus > 0) {
+      badge.classList.add('ativo');
+      txt.textContent = '✅ ' + clientesBonus + ' cliente(s) com 50k+ → atingimento bônus ' + bonusAting.toFixed(2) + '% (+' + bonusContrib.toFixed(2) + ' pts no card)';
+    } else {
+      badge.classList.remove('ativo');
+      txt.textContent = '⚡ Informe quantos clientes fizeram 50k+ para calcular o bônus';
+    }
+  }
+
+  function atualizaBar(kpi, pct) {
+    document.getElementById(kpi + '-pct').textContent = pct > 0 ? pct.toFixed(1) + '%' : '—';
+
+    const fill = document.getElementById(kpi + '-bar');
+    fill.style.width = Math.min(pct, 200) / 2 + '%';
+    fill.className = 'bar-fill';
+    if (pct < 70)  fill.classList.add('danger');
+    else if (pct < 100) fill.classList.add('warn');
+  }
+</script>
+
+</body>
+</html>
